@@ -16,13 +16,16 @@ export function isValidGitHubUrl(url) {
 }
 
 export function getErrorMessage(error) {
+  if (error.code === 'ECONNABORTED') {
+    return 'The request timed out. Repository analysis can take several minutes — please try again.';
+  }
   if (error.response?.data?.detail) {
     const detail = error.response.data.detail;
     if (typeof detail === 'string') return detail;
     if (Array.isArray(detail)) return detail.map((d) => d.msg).join(', ');
   }
   if (error.message === 'Network Error') {
-    return 'Unable to connect to the server. Please check your connection.';
+    return 'Unable to connect to the server. Make sure the backend is running on http://127.0.0.1:8000.';
   }
   return 'Something went wrong. Please try again.';
 }

@@ -32,7 +32,11 @@ export default function ChatPage() {
     try {
       const { data } = await chatAPI.getConversation(id, conversationId);
       setMessages(
-        (data.messages || []).map((m) => ({ role: m.role, content: m.content }))
+        (data.messages || []).map((m) => ({
+          role: m.role,
+          content: m.content,
+          sources: m.sources || [],
+        }))
       );
       setActiveConversationId(conversationId);
     } catch (err) {
@@ -178,7 +182,14 @@ export default function ChatPage() {
 
     try {
       const { data } = await chatAPI.send(id, activeConversationId, message);
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.answer }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: data.answer,
+          sources: data.sources || [],
+        },
+      ]);
 
       setConversations((prev) => {
         const updated = prev.map((c) => {
@@ -298,7 +309,27 @@ export default function ChatPage() {
                       {msg.role === 'user' ? (
                         <p className="text-sm leading-relaxed">{msg.content}</p>
                       ) : (
-                        <MarkdownRenderer content={msg.content} />
+                        <>
+                          <MarkdownRenderer content={msg.content} />
+                          {Array.isArray(msg.sources) && msg.sources.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-neutral-800">
+                              <p className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5">
+                                Sources
+                              </p>
+                              <ul className="space-y-1">
+                                {msg.sources.map((src) => (
+                                  <li
+                                    key={src}
+                                    className="text-xs text-slate-600 dark:text-neutral-300 font-mono truncate"
+                                    title={src}
+                                  >
+                                    {src}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -307,10 +338,15 @@ export default function ChatPage() {
                 {loading && (
                   <div className="flex gap-3 animate-fade-in">
                     <ChatAvatar role="assistant" />
-                    <div className="bubble-assistant px-4 py-3 flex items-center gap-1.5">
-                      <span className="typing-dot w-2 h-2 bg-slate-400 dark:bg-neutral-500 rounded-full inline-block" />
-                      <span className="typing-dot w-2 h-2 bg-slate-400 dark:bg-neutral-500 rounded-full inline-block" />
-                      <span className="typing-dot w-2 h-2 bg-slate-400 dark:bg-neutral-500 rounded-full inline-block" />
+                    <div className="bubble-assistant px-4 py-3 flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="typing-dot w-2 h-2 bg-slate-400 dark:bg-neutral-500 rounded-full inline-block" />
+                        <span className="typing-dot w-2 h-2 bg-slate-400 dark:bg-neutral-500 rounded-full inline-block" />
+                        <span className="typing-dot w-2 h-2 bg-slate-400 dark:bg-neutral-500 rounded-full inline-block" />
+                      </div>
+                      <p className="text-xs text-slate-400 dark:text-neutral-500">
+                        Searching repository context…
+                      </p>
                     </div>
                   </div>
                 )}

@@ -17,6 +17,27 @@ IGNORED_DIRS = {
     "vendor",
     ".idea",
     ".vscode",
+    "chroma",
+    "temp_repos",
+    ".tox",
+    ".mypy_cache",
+    ".pytest_cache",
+    "htmlcov",
+}
+
+# Skip noisy / generated files even if extension is supported
+IGNORED_FILE_NAMES = {
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "composer.lock",
+    "poetry.lock",
+    "Cargo.lock",
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.development",
+    ".DS_Store",
 }
 
 SUPPORTED_EXTENSIONS = {
@@ -70,6 +91,12 @@ def read_repository_files(repo_path: str) -> list[dict]:
             file_path = Path(root) / filename
             ext = file_path.suffix.lower()
 
+            if filename in IGNORED_FILE_NAMES or filename.startswith(".env"):
+                continue
+            if filename.endswith(".min.js") or filename.endswith(".min.css"):
+                continue
+            if filename.endswith(".map"):
+                continue
             if ext not in SUPPORTED_EXTENSIONS:
                 continue
             if is_binary_file(file_path):

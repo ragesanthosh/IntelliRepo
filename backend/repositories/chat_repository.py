@@ -51,11 +51,20 @@ class ConversationRepository:
         user_message: str,
         assistant_message: str,
         update_title: bool = False,
+        sources: list[str] | None = None,
     ) -> Conversation | None:
         now = datetime.now(timezone.utc)
+        assistant_doc = {
+            "role": "assistant",
+            "content": assistant_message,
+            "createdAt": now,
+        }
+        if sources:
+            assistant_doc["sources"] = sources
+
         new_messages = [
             {"role": "user", "content": user_message, "createdAt": now},
-            {"role": "assistant", "content": assistant_message, "createdAt": now},
+            assistant_doc,
         ]
 
         update_fields: dict = {

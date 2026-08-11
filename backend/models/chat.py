@@ -13,17 +13,21 @@ def generate_title(message: str, max_len: int = 48) -> str:
 
 
 class ChatMessage:
-    def __init__(self, role: str, content: str, created_at=None):
+    def __init__(self, role: str, content: str, created_at=None, sources=None):
         self.role = role
         self.content = content
         self.created_at = created_at or utc_now()
+        self.sources = sources or []
 
     def to_dict(self) -> dict:
-        return {
+        data = {
             "role": self.role,
             "content": self.content,
             "createdAt": self.created_at,
         }
+        if self.sources:
+            data["sources"] = self.sources
+        return data
 
     @classmethod
     def from_dict(cls, data: dict) -> "ChatMessage":
@@ -31,6 +35,7 @@ class ChatMessage:
             role=data["role"],
             content=data["content"],
             created_at=data.get("createdAt"),
+            sources=data.get("sources") or [],
         )
 
 
@@ -97,6 +102,7 @@ class Conversation:
                     "role": m.role,
                     "content": m.content,
                     "created_at": m.created_at.isoformat() if m.created_at else "",
+                    "sources": m.sources or [],
                 }
                 for m in self.messages
             ],

@@ -29,3 +29,13 @@ async def get_repository(
 ):
     service = RepositoryService()
     return service.get_repository(repo_id, str(current_user._id))
+
+
+@router.post("/{repo_id}/reindex", response_model=AnalyzeResponse)
+async def reindex_repository(
+    repo_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Rebuild the vector index with the latest chunking format. Keeps MongoDB summary."""
+    service = RepositoryService()
+    return service.reindex(repo_id, str(current_user._id))

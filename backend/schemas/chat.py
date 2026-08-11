@@ -15,6 +15,7 @@ class ChatMessageResponse(BaseModel):
     role: str
     content: str
     created_at: str
+    sources: list[str] = Field(default_factory=list)
 
 
 class ChatResponse(BaseModel):

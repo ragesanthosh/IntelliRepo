@@ -1,10 +1,11 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
 const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 120000,
 });
 
 api.interceptors.request.use((config) => {
@@ -36,9 +37,11 @@ export const authAPI = {
 };
 
 export const repositoryAPI = {
-  analyze: (url) => api.post('/repository/analyze', { url }),
+  // Analysis can take several minutes (clone + embed + Gemini)
+  analyze: (url) => api.post('/repository/analyze', { url }, { timeout: 600000 }),
   list: () => api.get('/repository'),
   get: (id) => api.get(`/repository/${id}`),
+  reindex: (id) => api.post(`/repository/${id}/reindex`, null, { timeout: 600000 }),
 };
 
 export const chatAPI = {
@@ -51,11 +54,15 @@ export const chatAPI = {
   deleteConversation: (repositoryId, conversationId) =>
     api.delete(`/chat/${repositoryId}/conversations/${conversationId}`),
   send: (repositoryId, conversationId, message) =>
-    api.post('/chat/message', {
-      repository_id: repositoryId,
-      conversation_id: conversationId,
-      message,
-    }),
+    api.post(
+      '/chat/message',
+      {
+        repository_id: repositoryId,
+        conversation_id: conversationId,
+        message,
+      },
+      { timeout: 180000 }
+    ),
 };
 
 export default api;

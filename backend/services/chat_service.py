@@ -1,8 +1,14 @@
 from fastapi import HTTPException, status
 from repositories.repository_repository import RepositoryRepository
 from repositories.chat_repository import ConversationRepository
-from rag.retriever import retrieve_relevant_chunks
-from ai.gemini import generate_chat_response
+from rag.retriever import retrieve_relevant_chunks, RetrievalError
+from ai.gemini import generate_chat_response, GeminiAPIError
+
+
+INSUFFICIENT_EVIDENCE = (
+    "I couldn't find enough relevant information in the repository "
+    "to answer this confidently."
+)
 
 
 class ChatService:
@@ -71,36 +77,55 @@ class ChatService:
                 detail="Repository has not been analyzed yet",
             )
 
+        # Controlled recent history for follow-up resolution + Gemini
         context_history = [{"role": m.role, "content": m.content} for m in conversation.messages]
 
         try:
-            chunks = retrieve_relevant_chunks(repo.chroma_collection, message, top_k=5)
+            retrieval = retrieve_relevant_chunks(
+                collection_name=repo.chroma_collection,
+                query=message,
+                history=context_history,
+            )
+        except RetrievalError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Unable to search the repository index. Please try again shortly.",
+            )
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Unable to search repository. Please try again.",
+                detail="Retrieval failed due to an unexpected server error. Please try again.",
             )
 
-        sources = list({c["source"] for c in chunks})
-
-        try:
-            answer = generate_chat_response(
-                question=message,
-                summary=repo.summary or {},
-                context_chunks=chunks,
-                history=context_history,
-            )
-        except Exception as e:
-            error_msg = str(e)
-            if "429" in error_msg or "quota" in error_msg.lower():
+        if not retrieval.get("sufficient"):
+            answer = retrieval.get("fallback_message") or INSUFFICIENT_EVIDENCE
+            sources: list[str] = []
+        else:
+            chunks = retrieval.get("chunks") or []
+            sources = retrieval.get("sources") or []
+            try:
+                answer = generate_chat_response(
+                    question=message,
+                    summary=repo.summary or {},
+                    context_chunks=chunks,
+                    history=context_history,
+                )
+            except GeminiAPIError as e:
+                error_msg = str(e)
+                if "429" in error_msg or "quota" in error_msg.lower():
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="AI service quota exceeded. Please try again later.",
+                    )
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Gemini API quota exceeded. Please try again later.",
+                    detail="AI service temporarily unavailable. Please try again later.",
                 )
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="AI service temporarily unavailable. Please try again later.",
-            )
+            except Exception:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="AI service temporarily unavailable. Please try again later.",
+                )
 
         is_first_message = len(conversation.messages) == 0
         updated = self.conversation_repo.append_messages(
@@ -110,8 +135,13 @@ class ChatService:
             message,
             answer,
             update_title=is_first_message and conversation.title == "New Chat",
+            sources=sources,
         )
 
         new_title = updated.title if updated else conversation.title
 
-        return {"answer": answer, "sources": sources, "title": new_title if is_first_message else None}
+        return {
+            "answer": answer,
+            "sources": sources,
+            "title": new_title if is_first_message else None,
+        }
