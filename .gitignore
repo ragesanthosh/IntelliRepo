@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+dist/
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+
+# IntelliRepo specific
+backend/chroma/
+backend/temp_repos/
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build
+frontend/dist/
