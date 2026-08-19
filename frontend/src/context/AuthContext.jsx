@@ -8,20 +8,15 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const loadUser = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
     try {
       const { data } = await authAPI.me();
       setUser(data);
     } catch {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
       setUser(null);
     } finally {
+      // Remove values left by versions that stored JWTs in localStorage.
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setLoading(false);
     }
   }, []);
@@ -32,24 +27,22 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const { data } = await authAPI.login({ email, password });
-    localStorage.setItem('token', data.access_token);
-    localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
     return data;
   };
 
   const register = async (name, email, password) => {
     const { data } = await authAPI.register({ name, email, password });
-    localStorage.setItem('token', data.access_token);
-    localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
     return data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await authAPI.logout();
+    } finally {
+      setUser(null);
+    }
   };
 
   return (

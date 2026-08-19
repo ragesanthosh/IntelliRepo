@@ -102,11 +102,9 @@ def main():
 
     r = client.post(f"{BASE}/auth/login", json={"email": EMAIL, "password": PASSWORD})
     r.raise_for_status()
-    token = r.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
     print("OK login")
 
-    r = client.get(f"{BASE}/auth/me", headers=headers)
+    r = client.get(f"{BASE}/auth/me")
     r.raise_for_status()
     user_id = r.json()["id"]
     print("OK me", user_id)
@@ -114,7 +112,7 @@ def main():
     repo_id = seed_index_and_mongo(user_id)
     print("OK seeded repo", repo_id)
 
-    r = client.post(f"{BASE}/chat/{repo_id}/conversations", headers=headers)
+    r = client.post(f"{BASE}/chat/{repo_id}/conversations")
     r.raise_for_status()
     conv_id = r.json()["id"]
     print("OK conversation", conv_id)
@@ -134,7 +132,6 @@ def main():
         print("\n===", q)
         r = client.post(
             f"{BASE}/chat/message",
-            headers=headers,
             json={
                 "repository_id": repo_id,
                 "conversation_id": conv_id,

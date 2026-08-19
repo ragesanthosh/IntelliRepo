@@ -1,21 +1,25 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import HTTPException, Request, status
 from auth.jwt_handler import decode_access_token
 from repositories.user_repository import UserRepository
-
-security = HTTPBearer()
+from utils.config import get_settings
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
 ):
-    token = credentials.credentials
+    settings = get_settings()
+    token = request.cookies.get(settings.auth_cookie_name)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
     payload = decode_access_token(token)
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
         )
 
     user_id = payload.get("sub")

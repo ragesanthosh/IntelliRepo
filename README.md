@@ -10,7 +10,7 @@ IntelliRepo is a full-stack SaaS application that helps developers analyze and u
 
 ## Features
 
-- **Secure Authentication** — Register, login, and JWT-protected routes with bcrypt password hashing
+- **Secure Authentication** — Register, login, HttpOnly JWT session cookies, and bcrypt password hashing
 - **Repository Analysis** — Clone public GitHub repos, read source files, and generate AI summaries
 - **Detailed Overview** — Project summary, workflow explanation, architecture, important files, tech stack, and AI insights
 - **RAG-Powered Chat** — Ask questions about the repository; answers come only from indexed code
@@ -117,6 +117,8 @@ Edit `backend/.env` with your credentials:
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 JWT_SECRET=your_super_secret_jwt_key
+AUTH_COOKIE_SECURE=false
+AUTH_COOKIE_SAMESITE=lax
 MONGODB_URI=mongodb://localhost:27017
 DATABASE_NAME=IntelliRepo
 GEMINI_MODEL=gemini-2.0-flash
@@ -167,6 +169,9 @@ API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 |----------|-------------|
 | `GEMINI_API_KEY` | Google Gemini API key |
 | `JWT_SECRET` | Secret for signing JWT tokens |
+| `AUTH_COOKIE_NAME` | HttpOnly session cookie name |
+| `AUTH_COOKIE_SECURE` | Require HTTPS when sending the session cookie |
+| `AUTH_COOKIE_SAMESITE` | Cookie CSRF policy (`lax`, `strict`, or `none`) |
 | `MONGODB_URI` | MongoDB connection string |
 | `DATABASE_NAME` | MongoDB database name |
 | `GEMINI_MODEL` | Gemini model (default: `gemini-2.0-flash`) |
@@ -188,7 +193,8 @@ API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/api/auth/register` | Register a new user |
-| `POST` | `/api/auth/login` | Login and receive JWT |
+| `POST` | `/api/auth/login` | Login and set the HttpOnly JWT cookie |
+| `POST` | `/api/auth/logout` | Clear the authentication cookie |
 | `GET` | `/api/auth/me` | Get current user (protected) |
 
 ### Repository

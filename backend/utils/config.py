@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from typing import Literal
 
 
 class Settings(BaseSettings):
@@ -12,6 +13,9 @@ class Settings(BaseSettings):
     chroma_db_path: str = "./chroma"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7  # 7 days
+    auth_cookie_name: str = "intellirepo_session"
+    auth_cookie_secure: bool = False
+    auth_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
     chunk_size: int = 1200
     chunk_overlap: int = 150
     temp_clone_dir: str = "./temp_repos"
