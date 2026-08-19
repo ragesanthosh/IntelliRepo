@@ -4,7 +4,6 @@
 
 IntelliRepo is a full-stack SaaS application that helps developers analyze and understand GitHub repositories using AI-powered summaries and contextual chat. Paste a repository URL, and IntelliRepo clones it, indexes the source code, and generates a detailed, beginner-friendly explanation of how the project works.
 
-> Placeholder paths — add screenshots after running the app locally.
 
 ---
 
